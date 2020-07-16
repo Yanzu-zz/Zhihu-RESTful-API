@@ -1,6 +1,7 @@
 const Router = require('koa-router')
 const {
-  index
+  index,
+  upload
 } = require('../controllers/home')
 
 const router = new Router()
@@ -11,5 +12,7 @@ const router = new Router()
 
 // 分离了控制器之后就不用再这里写回调了
 router.get('/', index)
+
+router.post('/upload', upload)
 
 module.exports = router

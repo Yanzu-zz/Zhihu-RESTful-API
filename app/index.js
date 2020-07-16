@@ -1,8 +1,11 @@
 const Koa = require('koa')
 const error = require('koa-json-error')
-const bodyparser = require('koa-bodyparser') // 要安装这个中间件才能解析请求体
+const koaBody = require('koa-body') // 要安装这个中间件才能解析请求体
+const koaStatic = require('koa-static')
 const parameter = require('koa-parameter')
 const mongoose = require('mongoose')
+
+const path = require('path')
 const routing = require('./routes')
 
 const app = new Koa()
@@ -37,6 +40,8 @@ app.use(async (ctx, next) => {
   }
 })
 */
+
+app.use(koaStatic(path.join(__dirname, 'public')))
 app.use(error({
   postFormat: (e, {
     stack,
@@ -46,7 +51,13 @@ app.use(error({
     ...rest
   }
 }))
-app.use(bodyparser())
+app.use(koaBody({
+  multipart: true,
+  formidable: {
+    uploadDir: path.join(__dirname, 'public/uploads'),
+    keepExtensions: true
+  }
+}))
 // 用 koa-parameter 来校验参数
 app.use(parameter(app))
 // 批量读取路由文件并注册
