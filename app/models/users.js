@@ -21,6 +21,78 @@ const userSchema = new Schema({
     type: String,
     required: true,
     select: false // 这就隐藏了
+  },
+  // 用户头像
+  avatar_url: {
+    type: String
+  },
+  // 性别
+  gender: {
+    type: String,
+    enum: ['male', 'female'],
+    default: 'male',
+    required: true
+  },
+  // 一句话简介
+  headline: {
+    type: String
+  },
+  // 以下都是默认不显示的字段
+  // 居住地
+  locations: {
+    type: [{
+      type: String
+    }],
+    select: false
+  },
+  // 从事行业
+  business: {
+    type: String,
+    select: false
+  },
+  // 职业经历
+  employments: {
+    type: [{
+      company: {
+        type: String
+      },
+      job: {
+        type: String
+      }
+    }],
+    select: false
+  },
+  // 教育经历
+  educations: {
+    type: [{
+      school: {
+        type: String
+      },
+      major: {
+        Type: String
+      },
+      diploma: {
+        // 用数字来表示学历，这样做也是比较合理的
+        type: Number,
+        enum: [1, 2, 3, 4, 5]
+      },
+      entrance_year: {
+        type: Number
+      },
+      graduation_year: {
+        type: Number
+      }
+    }],
+    select: false
+  },
+  // 关注列表
+  following: {
+    type: [{
+      // 关注的人的ID，此 ID 的类型是 MongoDB 设置好的类型，不是简单的 JS 类型
+      type: Schema.Types.ObjectId,
+      ref: 'User' // 表示与 User 这个 Schema 相关联的
+    }],
+    select: false
   }
 })
 

@@ -7,7 +7,12 @@ const {
   update,
   delete: del, // delete 是关键字，所以我们给他取个别名
   login,
-  checkOwner // 授权中间件
+  checkOwner, // 授权中间件
+  listFollowing,
+  follow,
+  unfollow,
+  listFollowers,
+  checkUserExist
 } = require('../controllers/users')
 const {
   secret
@@ -39,7 +44,7 @@ const auth = async (ctx, next) => {
 }
  */
 
- // 用别人写好的轮子一句话搞定
+// 用别人写好的轮子一句话搞定
 const auth = jwt({
   secret
 })
@@ -56,5 +61,13 @@ router.patch('/:id', auth, checkOwner, update)
 router.delete('/:id', auth, checkOwner, del)
 
 router.post('/login', login)
+
+router.get('/:id/following', listFollowing)
+
+router.get('/:id/followers', listFollowers)
+
+router.put('/following/:id', auth, checkUserExist, follow)
+
+router.delete('/following/:id', auth, checkUserExist, unfollow)
 
 module.exports = router

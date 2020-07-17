@@ -15,7 +15,14 @@ class UsersCtl {
 
   // 获取特定用户
   async findById(ctx) {
-    const user = await User.findById(ctx.params.id)
+    // 获取 fields 参数，额外显示需要显示的字段内容（每个字段以 ; 号隔开）
+    const {
+      fields
+    } = ctx.query
+    // 把传入的 field 参数处理成 MongoDB 需要的 select 格式（+[字段名]+[字段名2]+...）
+    const selectFields = fields.split(';').filter(f => f).map(f => ' +' + f).join('')
+
+    const user = await User.findById(ctx.params.id).select(selectFields)
     if (!user) {
       ctx.throw(404, '用户不存在')
     }
@@ -52,6 +59,7 @@ class UsersCtl {
   }
 
   // 授权中间件，防止别的用户删除或修改了你的帐号
+  // 该授权码中间件只有在涉及到自己操作自己 ID 的时候才会用上
   async checkOwner(ctx, next) {
     if (ctx.params.id !== ctx.state.user._id) {
       ctx.throw(403, '没有权限')
@@ -68,7 +76,38 @@ class UsersCtl {
       password: {
         type: 'string',
         required: false
-      }
+      },
+      avatar_url: {
+        type: 'string',
+        require: false
+      },
+      gender: {
+        type: 'string',
+        require: false
+      },
+      headline: {
+        type: 'string',
+        require: false
+      },
+      locations: {
+        type: 'array',
+        itemType: 'string',
+        require: false
+      },
+      business: {
+        type: 'string',
+        require: false
+      },
+      employments: {
+        type: 'array',
+        itemType: 'object',
+        require: false
+      },
+      educations: {
+        type: 'array',
+        itemType: 'object',
+        require: false
+      },
     })
 
     const user = await User.findByIdAndUpdate(ctx.params.id, ctx.request.body)
@@ -122,6 +161,67 @@ class UsersCtl {
     ctx.body = {
       token
     }
+  }
+
+  // 获取某个用户的关注列表
+  async listFollowing(ctx) {
+    // 有了 ref 的帮助，用 .populate 函数就可以获取列表用户的具体信息了（根据id）
+    const user = await User.findById(ctx.params.id).select('+following').populate('following')
+    if (!user) {
+      ctx.throw(404)
+    }
+
+    ctx.body = user.following
+  }
+
+  // 获取某个用户的粉丝列表（注意，粉丝可能有百万上千万）
+  async listFollowers(ctx) {
+    const users = await User.find({
+      // 查询粉丝列表很简单，只需要查找数据库 following 字段包含本用户的 id 即可
+      following: ctx.params.id
+    })
+
+    ctx.body = users
+  }
+
+  // 校验用户存在与否的中间件
+  async checkUserExist(ctx, next) {
+    // 其实就是请求一下数据库看看关注 or 取关的用户存不存在，不存在报错
+    const user = await User.findById(ctx.params.id)
+
+    if (!user) {
+      ctx.throw(404, '用户不存在')
+    }
+
+    await next()
+  }
+
+  // 关注某人功能
+  async follow(ctx) {
+    const me = await User.findById(ctx.state.user._id).select('+following')
+
+    // 判断以下防止多次关注一个人
+    if (!me.following.map(id => id.toString()).includes(ctx.params.id)) {
+      me.following.push(ctx.params.id)
+      me.save() // 操作完记得保存到数据库里
+    }
+
+    ctx.status = 204
+  }
+
+  // 取消关注某人功能
+  async unfollow(ctx) {
+    const me = await User.findById(ctx.state.user._id).select('+following')
+    // 获取需要取关的人的 ID 在你自己的关注人列表索引
+    const index = me.following.map(id => id.toString()).indexOf(ctx.params.id)
+
+    // 如果需要取关的人存在你的关注列表里
+    if (index > -1) {
+      me.following.splice(index, 1)
+      me.save() // 操作完记得保存到数据库里
+    }
+
+    ctx.status = 204
   }
 }
 
