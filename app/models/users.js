@@ -41,23 +41,28 @@ const userSchema = new Schema({
   // 居住地
   locations: {
     type: [{
-      type: String
+      // 根据 Topic 的 ObjectId，获取该字段的所有数据（需要配合 populate 函数）
+      type: Schema.Types.ObjectId,
+      ref: 'Topic'
     }],
     select: false
   },
   // 从事行业
   business: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: 'Topic',
     select: false
   },
   // 职业经历
   employments: {
     type: [{
       company: {
-        type: String
+        type: Schema.Types.ObjectId,
+        ref: 'Topic'
       },
       job: {
-        type: String
+        type: Schema.Types.ObjectId,
+        ref: 'Topic'
       }
     }],
     select: false
@@ -66,10 +71,12 @@ const userSchema = new Schema({
   educations: {
     type: [{
       school: {
-        type: String
+        type: Schema.Types.ObjectId,
+        ref: 'Topic'
       },
       major: {
-        Type: String
+        type: Schema.Types.ObjectId,
+        ref: 'Topic'
       },
       diploma: {
         // 用数字来表示学历，这样做也是比较合理的
@@ -91,6 +98,13 @@ const userSchema = new Schema({
       // 关注的人的ID，此 ID 的类型是 MongoDB 设置好的类型，不是简单的 JS 类型
       type: Schema.Types.ObjectId,
       ref: 'User' // 表示与 User 这个 Schema 相关联的
+    }],
+    select: false
+  },
+  followingTopics:{
+    type: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Topic'
     }],
     select: false
   }

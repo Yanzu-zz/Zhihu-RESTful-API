@@ -10,19 +10,46 @@ class UsersCtl {
 
   // 查询用户列表
   async find(ctx) {
-    ctx.body = await User.find()
+    const {
+      per_page = 10
+    } = ctx.query
+    // 当前页数
+    const page = Math.max(ctx.query.page * 1, 1) - 1
+    // 每页显示多少条数据，也防止坏用户填写非法条数，如0，-1，-1288 等
+    const perPage = Math.max(per_page * 1, 1)
+
+    // 利用 MongoDB 的语法 .limit和.skip() 巧妙地进行分页
+    // .limit(n) 一次只返回 n 条数据， .skip(m) 跳过前 m 条数据，返回第 m+1 条数据
+    ctx.body = await User
+      .find({
+        name: new RegExp(ctx.query.q) // 一句话实现模糊搜索
+      })
+      .limit(perPage)
+      .skip(page * perPage)
   }
 
   // 获取特定用户
   async findById(ctx) {
     // 获取 fields 参数，额外显示需要显示的字段内容（每个字段以 ; 号隔开）
     const {
-      fields
+      fields = ''
     } = ctx.query
     // 把传入的 field 参数处理成 MongoDB 需要的 select 格式（+[字段名]+[字段名2]+...）
     const selectFields = fields.split(';').filter(f => f).map(f => ' +' + f).join('')
+    const populateStr = fields.split(';').filter(f => f).map(f => {
+      if (f === 'employments') {
+        return 'employments.company employments.job'
+      }
+      if (f === 'educations') {
+        return 'educations.school educations.major'
+      }
+      return f
+    }).join(' ')
 
-    const user = await User.findById(ctx.params.id).select(selectFields)
+    const user = await User
+      .findById(ctx.params.id)
+      .select(selectFields)
+      .populate(populateStr)
     if (!user) {
       ctx.throw(404, '用户不存在')
     }
@@ -168,7 +195,7 @@ class UsersCtl {
     // 有了 ref 的帮助，用 .populate 函数就可以获取列表用户的具体信息了（根据id）
     const user = await User.findById(ctx.params.id).select('+following').populate('following')
     if (!user) {
-      ctx.throw(404)
+      ctx.throw(404, "用户不存在")
     }
 
     ctx.body = user.following
@@ -218,6 +245,44 @@ class UsersCtl {
     // 如果需要取关的人存在你的关注列表里
     if (index > -1) {
       me.following.splice(index, 1)
+      me.save() // 操作完记得保存到数据库里
+    }
+
+    ctx.status = 204
+  }
+
+  // 获取用户关注的话题
+  async listFollowingTopics(ctx) {
+    // 有了 ref 的帮助，用 .populate 函数就可以获取列表用户的具体信息了（根据id）
+    const user = await User.findById(ctx.params.id).select('+followingTopics').populate('followingTopics')
+    if (!user) {
+      ctx.throw(404, "用户不存在")
+    }
+
+    ctx.body = user.followingTopics
+  }
+
+  // 关注话题功能（和关注用户功能大致一样，不懂参考上面）
+  async followTopic(ctx) {
+    const me = await User.findById(ctx.state.user._id).select('+followingTopics')
+
+    // 判断以下防止多次关注话题
+    if (!me.followingTopics.map(id => id.toString()).includes(ctx.params.id)) {
+      me.followingTopics.push(ctx.params.id)
+      me.save() // 操作完记得保存到数据库里
+    }
+
+    ctx.status = 204
+  }
+
+  // 取消关注话题功能
+  async unfollowTopic(ctx) {
+    const me = await User.findById(ctx.state.user._id).select('+followingTopics')
+    // 获取需要取关的话题 id 在你自己的关注人列表索引
+    const index = me.followingTopics.map(id => id.toString()).indexOf(ctx.params.id)
+
+    if (index > -1) {
+      me.followingTopics.splice(index, 1)
       me.save() // 操作完记得保存到数据库里
     }
 

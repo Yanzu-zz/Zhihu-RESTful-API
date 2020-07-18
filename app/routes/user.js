@@ -7,20 +7,32 @@ const {
   update,
   delete: del, // delete 是关键字，所以我们给他取个别名
   login,
-  checkOwner, // 授权中间件
   listFollowing,
   follow,
   unfollow,
   listFollowers,
-  checkUserExist
+  listFollowingTopics,
+  followTopic,
+  unfollowTopic
 } = require('../controllers/users')
 const {
   secret
 } = require('../config')
 
+// 中间件
+const {
+  checkOwner,
+  checkUserExist
+} = require('../controllers/users')
+const {
+  checkTopicExist
+} = require('../controllers/topics')
+
 const router = new Router({
   prefix: '/users'
 })
+
+
 
 /**
  * 认证中间件
@@ -69,5 +81,11 @@ router.get('/:id/followers', listFollowers)
 router.put('/following/:id', auth, checkUserExist, follow)
 
 router.delete('/following/:id', auth, checkUserExist, unfollow)
+
+router.get('/:id/followingTopics', listFollowingTopics)
+
+router.put('/followingTopics/:id', auth, checkTopicExist, followTopic)
+
+router.delete('/followingTopics/:id', auth, checkTopicExist, unfollowTopic)
 
 module.exports = router
