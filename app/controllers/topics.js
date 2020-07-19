@@ -1,5 +1,6 @@
 const Topic = require('../models/topics')
 const User = require('../models/users')
+const Question = require('../models/questions')
 
 class TopicsCtl {
   // 获取所有话题列表
@@ -106,6 +107,15 @@ class TopicsCtl {
       .skip(page * perPage)
 
     ctx.body = users
+  }
+
+  // 列出一个话题下的问题列表
+  async listQuestions(ctx) {
+    const questions = await Question.find({
+      topics: ctx.params.id
+    })
+
+    ctx.body = questions
   }
 }
 
