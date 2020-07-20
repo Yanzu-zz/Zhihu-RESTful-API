@@ -26,7 +26,16 @@ const answerSchema = new Schema({
   questionId: {
     type: String,
     required: true
+  },
+  // 投票数（赞/踩数量）
+  voteCount: {
+    type: Number,
+    require: true,
+    default: 0
   }
+}, {
+  // 加这么一句参数，所有的数据都会自带时间戳了（MongoDB帮我们做好的）
+  timestamps: true
 })
 
 // 在 MongoDB 上创建一个集合，名字为 User，并导出类

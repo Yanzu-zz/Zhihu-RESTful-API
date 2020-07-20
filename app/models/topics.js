@@ -23,6 +23,9 @@ const topicSchema = new Schema({
     type: String,
     select: false
   }
+}, {
+  // 加这么一句参数，所有的数据都会自带时间戳了（MongoDB帮我们做好的）
+  timestamps: true
 })
 
 // 在 MongoDB 上创建一个集合，名字为 User，并导出类

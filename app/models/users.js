@@ -101,13 +101,40 @@ const userSchema = new Schema({
     }],
     select: false
   },
-  followingTopics:{
+  followingTopics: {
     type: [{
       type: Schema.Types.ObjectId,
       ref: 'Topic'
     }],
     select: false
+  },
+  // 赞过的答案（数组）
+  likingAnswers: {
+    type: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Answer'
+    }],
+    select: false
+  },
+  // 踩过的答案（数组）
+  dislikingAnswers: {
+    type: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Answer'
+    }],
+    select: false
+  },
+  // 收藏的答案
+  collectingAnswers: {
+    type: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Answer'
+    }],
+    select: false
   }
+}, {
+  // 加这么一句参数，所有的数据都会自带时间戳了（MongoDB帮我们做好的）
+  timestamps: true
 })
 
 // 在 MongoDB 上创建一个集合，名字为 User，并导出类
