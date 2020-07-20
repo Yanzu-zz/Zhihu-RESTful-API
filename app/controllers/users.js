@@ -1,6 +1,7 @@
 const jsonwebtoken = require('jsonwebtoken')
 const User = require('../models/users')
 const Question = require('../models/questions')
+const Answer = require('../models/answers')
 const {
   secret
 } = require('../config')
@@ -297,6 +298,176 @@ class UsersCtl {
     })
 
     ctx.body = questions
+  }
+
+  // 赞 操作的三个控制器
+  // 列出用户 赞 过的答案列表
+  async listlikingAnswers(ctx) {
+    // 有了 ref 的帮助，用 .populate 函数就可以获取列表用户的具体信息了（根据id）
+    const user = await User
+      .findById(ctx.params.id)
+      .select('+likingAnswers')
+      .populate('likingAnswers')
+
+    if (!user) {
+      ctx.throw(404, "用户不存在")
+    }
+
+    ctx.body = user.likingAnswers
+  }
+
+  // 赞一个答案
+  async likeAnswer(ctx, next) {
+    const me = await User
+      .findById(ctx.state.user._id)
+      .select('+likingAnswers')
+
+    // 判断以下防止多次关注话题
+    if (!me.likingAnswers.map(id => id.toString()).includes(ctx.params.id)) {
+      me.likingAnswers.push(ctx.params.id)
+      me.save() // 操作完记得保存到数据库里
+
+      // 赞的答案 赞数 增加1
+      await Answer.findByIdAndUpdate(ctx.params.id, {
+        $inc: {
+          voteCount: 1
+        }
+      })
+    }
+
+    ctx.status = 204
+    await next()
+  }
+
+  // 取消赞一个答案
+  async unlikeAnswer(ctx) {
+    const me = await User
+      .findById(ctx.state.user._id)
+      .select('+likingAnswers')
+    // 获取需要取关的话题 id 在你自己的关注人列表索引
+    const index = me.likingAnswers.map(id => id.toString()).indexOf(ctx.params.id)
+
+    if (index > -1) {
+      me.likingAnswers.splice(index, 1)
+      me.save() // 操作完记得保存到数据库里
+
+      await Answer.findByIdAndUpdate(ctx.params.id, {
+        $inc: {
+          voteCount: -1
+        }
+      })
+    }
+
+    ctx.status = 204
+  }
+
+  // 踩 操作的三个控制器
+  // 列出用户 踩 过的答案列表
+  async listDislikingAnswers(ctx) {
+    // 有了 ref 的帮助，用 .populate 函数就可以获取列表用户的具体信息了（根据id）
+    const user = await User
+      .findById(ctx.params.id)
+      .select('+dislikingAnswers')
+      .populate('dislikingAnswers')
+
+    if (!user) {
+      ctx.throw(404, "用户不存在")
+    }
+
+    ctx.body = user.dislikingAnswers
+  }
+
+  // 踩一个答案
+  async dislikeAnswer(ctx, next) {
+    const me = await User
+      .findById(ctx.state.user._id)
+      .select('+dislikingAnswers')
+
+    // 判断以下防止多次关注话题
+    if (!me.dislikingAnswers.map(id => id.toString()).includes(ctx.params.id)) {
+      me.dislikingAnswers.push(ctx.params.id)
+      me.save() // 操作完记得保存到数据库里
+
+      // 踩的答案 踩数 增加1
+      // await Answer.findByIdAndUpdate(ctx.params.id, {
+      //   $inc: {
+      //     voteCount: 1
+      //   }
+      // })
+    }
+
+    ctx.status = 204
+    await next()
+  }
+
+  // 取消踩一个答案
+  async undislikeAnswer(ctx) {
+    const me = await User
+      .findById(ctx.state.user._id)
+      .select('+dislikingAnswers')
+    // 获取需要取关的话题 id 在你自己的关注人列表索引
+    const index = me.dislikingAnswers.map(id => id.toString()).indexOf(ctx.params.id)
+
+    if (index > -1) {
+      me.dislikingAnswers.splice(index, 1)
+      me.save() // 操作完记得保存到数据库里
+
+      // await Answer.findByIdAndUpdate(ctx.params.id, {
+      //   $inc: {
+      //     voteCount: -1
+      //   }
+      // })
+    }
+
+    ctx.status = 204
+  }
+
+  // 收藏 操作的三个控制器
+  // 列出用户 收藏 过的答案列表
+  async listCollectingAnswers(ctx) {
+    // 有了 ref 的帮助，用 .populate 函数就可以获取列表用户的具体信息了（根据id）
+    const user = await User
+      .findById(ctx.params.id)
+      .select('+collectingAnswers')
+      .populate('collectingAnswers')
+
+    if (!user) {
+      ctx.throw(404, "用户不存在")
+    }
+
+    ctx.body = user.collectingAnswers
+  }
+
+  // 收藏一个答案
+  async collectAnswer(ctx, next) {
+    const me = await User
+      .findById(ctx.state.user._id)
+      .select('+collectingAnswers')
+
+    // 判断以下防止多次关注话题
+    if (!me.collectingAnswers.map(id => id.toString()).includes(ctx.params.id)) {
+      me.collectingAnswers.push(ctx.params.id)
+      me.save() // 操作完记得保存到数据库里
+    }
+
+    ctx.status = 204
+    await next()
+  }
+
+  // 取消收藏一个答案
+  async uncollectAnswer(ctx) {
+    const me = await User
+      .findById(ctx.state.user._id)
+      .select('+collectingAnswers')
+    // 获取需要取关的话题 id 在你自己的关注人列表索引
+    const index = me.collectingAnswers.map(id => id.toString()).indexOf(ctx.params.id)
+
+    if (index > -1) {
+      me.collectingAnswers.splice(index, 1)
+      me.save() // 操作完记得保存到数据库里
+    }
+
+    ctx.status = 204
   }
 }
 
